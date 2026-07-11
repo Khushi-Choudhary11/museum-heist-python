@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Great Museum Heist — A Case Study in Python Functions</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --bg2:#111725; --ink:#e8ecf5; --muted:#9aa6c0;
+    --gold:#f4c95d; --gold2:#e0a92e; --red:#ff5d5d; --green:#4ade80;
+    --blue:#5db4ff; --violet:#b58bff; --line:rgba(255,255,255,.09);
+    --code:#0d1424; --card:#141b2c;
+    --mono:"SF Mono",ui-monospace,"Cascadia Code","Fira Code",Menlo,Consolas,monospace;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#1a2338 0%,var(--bg) 55%);
+    color:var(--ink);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px 120px}
+  a{color:var(--gold)}
+
+  /* progress bar */
+  #bar{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;
+    background:linear-gradient(90deg,var(--gold),var(--gold2));box-shadow:0 0 12px var(--gold)}
+
+  /* hero */
+  .hero{min-height:88vh;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;text-align:center;position:relative;padding:60px 20px}
+  .hero .ey{letter-spacing:.42em;text-transform:uppercase;font-size:.72rem;color:var(--gold);
+    font-weight:700;margin-bottom:22px}
+  .hero h1{font-size:clamp(2.3rem,7vw,4.4rem);line-height:1.02;margin:0;font-weight:900;
+    background:linear-gradient(180deg,#fff,#b9c4dd);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{color:var(--muted);max-width:560px;margin:26px auto 0;font-size:1.08rem}
+  .badge{display:inline-flex;gap:8px;align-items:center;margin-top:34px;padding:9px 16px;
+    border:1px solid var(--line);border-radius:100px;background:rgba(255,255,255,.03);
+    font-size:.82rem;color:var(--muted)}
+  .scroll-hint{position:absolute;bottom:26px;color:var(--muted);font-size:.78rem;animation:bob 1.8s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+
+  /* mission ribbon */
+  .rib{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:38px 0 0}
+  .rib span{font-size:.72rem;color:var(--muted);border:1px solid var(--line);
+    padding:5px 11px;border-radius:100px}
+
+  /* section */
+  section{padding:46px 0;border-top:1px solid var(--line)}
+  .kicker{display:flex;align-items:center;gap:12px;color:var(--gold);font-weight:700;
+    letter-spacing:.16em;text-transform:uppercase;font-size:.74rem;margin-bottom:12px}
+  .kicker .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;
+    background:linear-gradient(160deg,var(--gold),var(--gold2));color:#241a00;font-weight:900;font-size:.9rem}
+  h2{font-size:clamp(1.6rem,4vw,2.3rem);margin:.1em 0 .5em;font-weight:800;letter-spacing:-.01em}
+  h3{font-size:1.18rem;margin:2em 0 .5em;font-weight:700}
+  p{color:#d3d9ea}
+  .lead{font-size:1.12rem;color:#e8ecf5}
+  .muted{color:var(--muted)}
+
+  /* story beat */
+  .beat{border-left:3px solid var(--gold);padding:2px 0 2px 18px;margin:22px 0;color:#c9d2e6;font-style:italic}
+
+  /* character card */
+  .char{display:flex;gap:16px;align-items:flex-start;background:linear-gradient(160deg,var(--card),#0f1524);
+    border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:22px 0}
+  .char .ic{font-size:2.2rem;line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  .char h3{margin:.1em 0 .3em}
+  .char .tag{font-size:.72rem;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+
+  /* code */
+  .code{position:relative;background:var(--code);border:1px solid var(--line);border-radius:12px;
+    margin:16px 0;overflow:hidden}
+  .code .top{display:flex;align-items:center;gap:7px;padding:10px 14px;border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.02)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .code .fname{margin-left:8px;font-family:var(--mono);font-size:.74rem;color:var(--muted)}
+  pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:.86rem;line-height:1.6}
+  code{font-family:var(--mono)}
+  .k{color:#ff9ecb}.s{color:#8ee7a6}.c{color:#6b7896;font-style:italic}
+  .f{color:#7dc4ff}.n{color:#f4c95d}.b{color:#c9a4ff}
+  .out{background:#0a0f1c;border-top:1px dashed var(--line);padding:12px 18px;font-family:var(--mono);
+    font-size:.82rem;color:#9fe6b4}
+  .out .lbl{color:#6b7896;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:6px}
+
+  /* callouts */
+  .call{border-radius:12px;padding:16px 18px;margin:18px 0;border:1px solid var(--line);font-size:.95rem}
+  .call .h{font-weight:700;display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .why{background:rgba(93,180,255,.07);border-color:rgba(93,180,255,.3)}
+  .why .h{color:var(--blue)}
+  .gotcha{background:rgba(255,93,93,.07);border-color:rgba(255,93,93,.3)}
+  .gotcha .h{color:var(--red)}
+  .remember{background:rgba(244,201,93,.08);border-color:rgba(244,201,93,.35)}
+  .remember .h{color:var(--gold)}
+  .pro{background:rgba(74,222,128,.07);border-color:rgba(74,222,128,.3)}
+  .pro .h{color:var(--green)}
+
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;margin:18px 0;font-size:.92rem;overflow:hidden;
+    border-radius:12px;border:1px solid var(--line)}
+  .tbl th,.tbl td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  .tbl th{background:rgba(255,255,255,.04);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl td code{color:var(--gold);font-size:.86rem}
+
+  /* reveal */
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+  summary{cursor:pointer;padding:15px 18px;font-weight:600;list-style:none;display:flex;
+    justify-content:space-between;align-items:center;user-select:none}
+  summary::-webkit-details-marker{display:none}
+  summary .q{color:var(--violet);font-weight:800;margin-right:10px}
+  summary::after{content:"+";color:var(--muted);font-size:1.3rem;transition:transform .2s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details .body{padding:0 18px 18px;color:#c9d2e6}
+
+  /* mission map / progress dots */
+  .map{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0}
+  .map .step{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:14px 15px}
+  .map .step .em{font-size:1.5rem}
+  .map .step b{display:block;margin-top:6px;font-size:.94rem}
+  .map .step small{color:var(--muted);font-size:.78rem}
+
+  /* quiz */
+  .quiz{background:linear-gradient(160deg,var(--card),#0f1524);border:1px solid var(--line);
+    border-radius:16px;padding:22px;margin:20px 0}
+  .quiz .qn{font-weight:700;margin-bottom:14px}
+  .opt{display:block;width:100%;text-align:left;background:#0e1524;border:1px solid var(--line);
+    color:var(--ink);padding:12px 15px;border-radius:10px;margin:8px 0;cursor:pointer;
+    font-family:var(--sans);font-size:.94rem;transition:.15s}
+  .opt:hover{border-color:var(--gold);background:#141d30}
+  .opt.correct{border-color:var(--green);background:rgba(74,222,128,.13)}
+  .opt.wrong{border-color:var(--red);background:rgba(255,93,93,.12)}
+  .fb{margin-top:12px;font-size:.9rem;min-height:1.2em}
+
+  /* final */
+  .cheat{background:linear-gradient(160deg,#16203a,#0e1424);border:1px solid var(--line);
+    border-radius:16px;padding:8px 22px 22px}
+  .end{text-align:center;padding:50px 0 10px}
+  .end .big{font-size:1.5rem;font-weight:800;margin:10px 0}
+  blockquote{border-left:3px solid var(--gold);margin:22px 0;padding:6px 0 6px 18px;
+    font-size:1.15rem;color:#fff;font-weight:600;font-style:italic}
+  hr.soft{border:none;border-top:1px solid var(--line);margin:34px 0}
+  ::selection{background:var(--gold);color:#241a00}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="ey">A Python Case Study · Functions</div>
+  <h1>The Great<br>Museum Heist</h1>
+  <p class="sub">One legendary jewel. One impossible vault. One truth every programmer must learn:
+  <b style="color:#fff">you never pull off the job alone.</b></p>
+  <div class="badge">🕵️ Role: The Mastermind &nbsp;·&nbsp; 🎯 Target: The Crystal of Olympos</div>
+  <div class="rib">
+    <span>① Built-in Functions</span><span>② User-Defined</span>
+    <span>③ Lambda</span><span>④ Higher-Order</span><span>⑤ The Deep Mechanics</span>
+  </div>
+  <div class="scroll-hint">scroll to begin the mission ↓</div>
+</header>
+
+<div class="wrap">
+
+<!-- ===================== BRIEFING ===================== -->
+<section id="brief">
+  <div class="kicker"><span class="n">0</span> The Briefing</div>
+  <h2>Why a heist needs a crew — and why code needs functions</h2>
+  <p class="lead">Tonight is the biggest night of your career. You've been hired to steal the
+  <b>Crystal of Olympos</b> from the most secure museum on Earth. But here's the problem that
+  makes or breaks every heist — and every program you'll ever write:</p>
+  <p class="beat">No single person can do everything. The moment you try to be the guard,
+  the hacker, the lockpick and the getaway driver all at once, the whole plan collapses.</p>
+  <p>So you build a <b>team</b>. Each member has <i>one</i> clear job. You don't re-explain their
+  skills every time — you just <b>call</b> them when needed, hand them what they need, and they
+  hand back a result. That single idea is the entire soul of a function.</p>
+
+  <div class="call why">
+    <div class="h">💡 The core mental model</div>
+    A <b>function</b> is a named, reusable teammate. You give it <b>inputs</b> (what it needs to
+    work with), it does <b>one job</b>, and it <b>returns</b> a result. Write the skill once —
+    reuse it forever.
+  </div>
+
+  <p class="muted">Four crew members will teach you the four families of functions. Then we crack
+  open the vault of <i>deep mechanics</i> that separate people who "use functions" from people who
+  truly understand them.</p>
+
+  <div class="map">
+    <div class="step"><span class="em">🧑‍💼</span><b>Museum Staff</b><small>Built-in functions — already there</small></div>
+    <div class="step"><span class="em">🔓</span><b>Lock Expert</b><small>User-defined — your custom logic</small></div>
+    <div class="step"><span class="em">👻</span><b>Ghost Hacker</b><small>Lambda — fast, throwaway</small></div>
+    <div class="step"><span class="em">🎩</span><b>Mastermind</b><small>Higher-order — commands others</small></div>
+  </div>
+</section>
+
+<!-- ===================== MISSION 1 ===================== -->
+<section id="m1">
+  <div class="kicker"><span class="n">1</span> Mission One · The Museum Guide</div>
+  <h2>Built-in Functions — the staff already on payroll</h2>
+  <p>Before you enter, you need intel. How many cameras? Which vault is toughest? How many guards
+  in total? You could count everything by hand… or you could ask the staff who are <b>already
+  there</b>, trained and waiting.</p>
+
+  <div class="char">
+    <div class="ic">🧑‍💼</div>
+    <div>
+      <span class="tag">Crew · Built-in Functions</span>
+      <h3>The Museum Guide</h3>
+      <p class="muted" style="margin:0">You didn't hire them. You didn't train them. They came
+      with the building. Python ships with dozens of these ready-made helpers.</p>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">recon.py</span></div>
+<pre><code><span class="n">security_levels</span> = [<span class="n">2</span>, <span class="n">5</span>, <span class="n">8</span>, <span class="n">10</span>]
+
+<span class="f">print</span>(<span class="f">len</span>(security_levels))   <span class="c"># how many vaults?</span>
+<span class="f">print</span>(<span class="f">max</span>(security_levels))   <span class="c"># the toughest one?</span>
+<span class="f">print</span>(<span class="f">sum</span>(security_levels))   <span class="c"># total guards on duty?</span></code></pre>
+    <div class="out"><span class="lbl">Output</span>4
+10
+25</div>
+  </div>
+
+  <table class="tbl">
+    <tr><th>Museum staff</th><th>Python built-in</th><th>Hands you back</th></tr>
+    <tr><td>Count the vaults</td><td><code>len()</code></td><td>how many items</td></tr>
+    <tr><td>Find the strongest lock</td><td><code>max()</code></td><td>the biggest value</td></tr>
+    <tr><td>Tally the guards</td><td><code>sum()</code></td><td>the total</td></tr>
+    <tr><td>Announce over the radio</td><td><code>print()</code></td><td>(nothing — it just shows)</td></tr>
+  </table>
+
+  <div class="call remember">
+    <div class="h">📌 Remember</div>
+    You don't create built-ins — you just call them. Reach for them before writing your own;
+    reinventing <code>max()</code> is like re-training a guard who's already standing there.
+  </div>
+</section>
+
+<!-- ===================== MISSION 2 ===================== -->
+<section id="m2">
+  <div class="kicker"><span class="n">2</span> Mission Two · The Lock Expert</div>
+  <h2>User-Defined Functions — the specialist you build yourself</h2>
+  <p>You reach the vault. You search for a built-in <code>open_secret_vault()</code>… and there
+  isn't one. Of course there isn't — <b>every vault is unique</b>. Python can't ship a function
+  for <i>your</i> specific problem. So you hire — you <b>define</b> — your own specialist.</p>
+
+  <div class="char">
+    <div class="ic">🔓</div>
+    <div>
+      <span class="tag">Crew · User-Defined Function</span>
+      <h3>The Lock Expert</h3>
+      <p class="muted" style="margin:0">Custom logic, built once, named clearly, reusable forever.
+      This is the function <i>you</i> author with <code>def</code>.</p>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">lock_expert.py</span></div>
+<pre><code><span class="k">def</span> <span class="f">unlock_vault</span>(<span class="n">secret_code</span>):
+    <span class="k">if</span> secret_code == <span class="s">"GOLD123"</span>:
+        <span class="k">return</span> <span class="s">"Vault Opened!"</span>
+    <span class="k">else</span>:
+        <span class="k">return</span> <span class="s">"Wrong Code!"</span>
+
+<span class="n">result</span> = <span class="f">unlock_vault</span>(<span class="s">"GOLD123"</span>)
+<span class="f">print</span>(result)</code></pre>
+    <div class="out"><span class="lbl">Output</span>Vault Opened!</div>
+  </div>
+
+  <h3>Read the anatomy like a job posting</h3>
+  <table class="tbl">
+    <tr><th>Piece of code</th><th>What it means in the heist</th></tr>
+    <tr><td><code>def</code></td><td>"I'm hiring a new specialist."</td></tr>
+    <tr><td><code>unlock_vault</code></td><td>the specialist's name — how you'll call them later</td></tr>
+    <tr><td><code>(secret_code)</code></td><td>the <b>parameter</b> — the info they need to do the job</td></tr>
+    <tr><td><code>return</code></td><td>the specialist hands a result back to you</td></tr>
+    <tr><td><code>unlock_vault("GOLD123")</code></td><td>the <b>call</b> — you put them to work with a real <b>argument</b></td></tr>
+  </table>
+
+  <div class="call why">
+    <div class="h">🧩 Parameter vs. Argument (people mix these up forever)</div>
+    The <b>parameter</b> is the empty slot in the job description — <code>secret_code</code>.
+    The <b>argument</b> is the real value you hand over when you call — <code>"GOLD123"</code>.
+    Job posting vs. the actual person who shows up.
+  </div>
+
+  <h3>Now the payoff: 100 vaults, one specialist</h3>
+  <p>Without functions you'd copy the same unlocking code 100 times. With one function, you just
+  keep calling your expert:</p>
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">the_night.py</span></div>
+<pre><code><span class="f">unlock_vault</span>(<span class="s">"RED111"</span>)
+<span class="f">unlock_vault</span>(<span class="s">"BLUE456"</span>)
+<span class="f">unlock_vault</span>(<span class="s">"GREEN999"</span>)   <span class="c"># one function · unlimited uses</span></code></pre>
+  </div>
+
+  <div class="call gotcha">
+    <div class="h">⚠️ Gotcha · <code>return</code> is not <code>print</code></div>
+    <code>print()</code> just <i>shows</i> a value to the human watching. <code>return</code>
+    <i>hands the value back</i> to the rest of your program so it can keep working with it.
+    A function that only prints is a teammate who shouts the combination out loud but never
+    actually gives it to you — useless for the next step of the plan.
+  </div>
+
+  <details>
+    <summary><span class="q">Try it</span> Which teammate can you keep using — and why?</summary>
+    <div class="body">
+      <div class="code" style="margin-top:8px">
+<pre><code><span class="k">def</span> <span class="f">shouter</span>(a, b):
+    <span class="f">print</span>(a + b)      <span class="c"># shows it, keeps nothing</span>
+
+<span class="k">def</span> <span class="f">giver</span>(a, b):
+    <span class="k">return</span> a + b     <span class="c"># hands it back</span>
+
+<span class="n">x</span> = <span class="f">shouter</span>(<span class="n">3</span>, <span class="n">4</span>)   <span class="c"># prints 7, but x is None!</span>
+<span class="n">y</span> = <span class="f">giver</span>(<span class="n">3</span>, <span class="n">4</span>)     <span class="c"># y is 7 — usable later</span></code></pre>
+      </div>
+      <p style="margin:.4em 0 0"><code>x</code> ends up as <code>None</code> — the shouter kept
+      nothing. <code>y</code> holds <code>7</code>. In a heist, always hire givers when the next
+      step depends on the result.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ===================== MISSION 3 ===================== -->
+<section id="m3">
+  <div class="kicker"><span class="n">3</span> Mission Three · The Ghost Hacker</div>
+  <h2>Lambda Functions — appears, does one job, vanishes</h2>
+  <p>The alarm trips. You have <b>three seconds</b>. Every access code must be multiplied by 7,
+  <i>right now</i>. Writing a full <code>def</code> with a name and a body feels like filling out
+  paperwork while the building burns. You need someone who shows up, does one tiny thing, and is
+  gone before the sirens finish.</p>
+
+  <div class="char">
+    <div class="ic">👻</div>
+    <div>
+      <span class="tag">Crew · Lambda Function</span>
+      <h3>The Ghost Hacker</h3>
+      <p class="muted" style="margin:0">A nameless, one-line function. No paperwork, no permanent
+      hire. Perfect for a single quick calculation.</p>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">ghost.py</span></div>
+<pre><code><span class="c"># The long way — a full hire:</span>
+<span class="k">def</span> <span class="f">multiply</span>(key):
+    <span class="k">return</span> key * <span class="n">7</span>
+
+<span class="c"># The Ghost way — same job, one breath:</span>
+<span class="n">multiply</span> = <span class="k">lambda</span> key: key * <span class="n">7</span>
+<span class="f">print</span>(multiply(<span class="n">5</span>))</code></pre>
+    <div class="out"><span class="lbl">Output</span>35</div>
+  </div>
+
+  <table class="tbl">
+    <tr><th>Part</th><th>Meaning</th></tr>
+    <tr><td><code>lambda</code></td><td>"summon a ghost"</td></tr>
+    <tr><td><code>key</code></td><td>the input (parameter)</td></tr>
+    <tr><td><code>:</code></td><td>"here's the one thing you do"</td></tr>
+    <tr><td><code>key * 7</code></td><td>the job — automatically returned, no <code>return</code> keyword</td></tr>
+  </table>
+
+  <div class="call pro">
+    <div class="h">✅ When the Ghost is the right call</div>
+    Tiny calculations, one-time jobs, and — most importantly — when you need to <i>hand a function
+    to another function</i> (Mission Four). Ghosts are made to be passed around.
+  </div>
+  <div class="call gotcha">
+    <div class="h">⚠️ Gotcha · Don't over-summon ghosts</div>
+    A lambda can only hold <b>one expression</b> — no multi-step logic, loops, or clarity for a
+    reader. If the job needs a real body or a name that explains itself, hire a proper
+    <code>def</code> specialist instead. Assigning a lambda to a name (<code>multiply = lambda…</code>)
+    is usually a sign you should've just written <code>def</code>.
+  </div>
+</section>
+
+<!-- ===================== MISSION 4 ===================== -->
+<section id="m4">
+  <div class="kicker"><span class="n">4</span> Mission Four · The Mastermind</div>
+  <h2>Higher-Order Functions — the one who commands the crew</h2>
+  <p>Hundreds of access codes are streaming in. Summoning the Ghost by hand, one code at a time,
+  would take all night. So you — <b>the Mastermind</b> — give a single order: <i>"Apply your trick
+  to every code."</i> You don't do the work. You <b>direct a function to do it</b>. That's a
+  higher-order function.</p>
+
+  <div class="char">
+    <div class="ic">🎩</div>
+    <div>
+      <span class="tag">Crew · Higher-Order Function</span>
+      <h3>The Mastermind</h3>
+      <p class="muted" style="margin:0">A function that <b>takes another function as input</b>
+      (or returns one). It coordinates; it doesn't grind. <code>map</code>, <code>filter</code>,
+      and <code>reduce</code> are its signature moves.</p>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">mastermind.py</span></div>
+<pre><code><span class="n">codes</span> = [<span class="n">2</span>, <span class="n">5</span>, <span class="n">8</span>, <span class="n">11</span>]
+
+<span class="n">new_codes</span> = <span class="f">list</span>(<span class="f">map</span>(<span class="k">lambda</span> code: code * <span class="n">7</span>, codes))
+<span class="f">print</span>(new_codes)</code></pre>
+    <div class="out"><span class="lbl">Output</span>[14, 35, 56, 77]</div>
+  </div>
+
+  <div class="call why">
+    <div class="h">🎯 The insight most learners miss</div>
+    <code>map()</code> never multiplied anything. The <b>lambda</b> did the multiplying —
+    <code>map()</code> just walked down the list and pointed the Ghost at each code. The Mastermind
+    manages; the crew executes. That separation is the whole point of higher-order functions.
+  </div>
+
+  <h3>The Mastermind's three signature orders</h3>
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">orders.py</span></div>
+<pre><code><span class="k">from</span> functools <span class="k">import</span> reduce
+<span class="n">codes</span> = [<span class="n">2</span>, <span class="n">5</span>, <span class="n">8</span>, <span class="n">11</span>]
+
+<span class="c"># map    → transform EVERY item</span>
+<span class="f">print</span>(<span class="f">list</span>(<span class="f">map</span>(<span class="k">lambda</span> c: c * <span class="n">7</span>, codes)))       <span class="c"># [14, 35, 56, 77]</span>
+
+<span class="c"># filter → keep only items that PASS a test</span>
+<span class="f">print</span>(<span class="f">list</span>(<span class="f">filter</span>(<span class="k">lambda</span> c: c > <span class="n">6</span>, codes)))     <span class="c"># [8, 11]</span>
+
+<span class="c"># reduce → boil the whole list down to ONE value</span>
+<span class="f">print</span>(<span class="f">reduce</span>(<span class="k">lambda</span> a, b: a + b, codes))       <span class="c"># 26</span></code></pre>
+    <div class="out"><span class="lbl">Output</span>[14, 35, 56, 77]
+[8, 11]
+26</div>
+  </div>
+
+  <table class="tbl">
+    <tr><th>Order</th><th>What it does</th><th>Heist meaning</th></tr>
+    <tr><td><code>map</code></td><td>transforms every item</td><td>"do this to <b>all</b> codes"</td></tr>
+    <tr><td><code>filter</code></td><td>keeps items passing a test</td><td>"only the high-security ones"</td></tr>
+    <tr><td><code>reduce</code></td><td>combines all into one</td><td>"total it into a single master key"</td></tr>
+  </table>
+  <p class="muted">The fact that you can <i>pass a function as an argument</i> is what makes Python
+  functions <b>"first-class citizens"</b> — they can be handed around, stored, and returned, just
+  like numbers or strings.</p>
+</section>
+
+<!-- ===================== MISSION 5 · DEEP MECHANICS ===================== -->
+<section id="m5">
+  <div class="kicker"><span class="n">5</span> Mission Five · Inside the Vault</div>
+  <h2>The deep mechanics that make you dangerous</h2>
+  <p>Any thief can pull a lever. A <b>master</b> understands how the vault actually works. These
+  are the details that separate someone who copies function code from someone who truly commands it.</p>
+
+  <h3>① Default arguments — a plan B baked in</h3>
+  <p>Give a parameter a fallback so the caller can skip it. Your crew has a standard number of
+  attempts unless you say otherwise.</p>
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">defaults.py</span></div>
+<pre><code><span class="k">def</span> <span class="f">crack</span>(<span class="n">vault</span>, <span class="n">attempts</span>=<span class="n">3</span>):        <span class="c"># attempts defaults to 3</span>
+    <span class="k">return</span> <span class="s">f"</span><span class="s">{vault}</span><span class="s"> cracked in </span><span class="s">{attempts}</span><span class="s"> tries"</span>
+
+<span class="f">print</span>(<span class="f">crack</span>(<span class="s">"A12"</span>))          <span class="c"># uses the default</span>
+<span class="f">print</span>(<span class="f">crack</span>(<span class="s">"B45"</span>, <span class="n">1</span>))       <span class="c"># overrides it</span></code></pre>
+    <div class="out"><span class="lbl">Output</span>A12 cracked in 3 tries
+B45 cracked in 1 tries</div>
+  </div>
+
+  <h3>② Scope — what happens in the vault stays in the vault</h3>
+  <p>A variable created <i>inside</i> a function is <b>local</b> — it exists only during that job and
+  vanishes after. It can't leak out and secretly change your outside world.</p>
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">scope.py</span></div>
+<pre><code><span class="n">loot</span> = <span class="n">0</span>                <span class="c"># global — outside the job</span>
+
+<span class="k">def</span> <span class="f">steal</span>():
+    <span class="n">loot</span> = <span class="n">100</span>          <span class="c"># local — a different 'loot', lives only here</span>
+    <span class="k">return</span> loot
+
+<span class="f">print</span>(<span class="f">steal</span>(), loot)   <span class="c"># the local was returned; the global never changed</span></code></pre>
+    <div class="out"><span class="lbl">Output</span>100 0</div>
+  </div>
+  <div class="call gotcha">
+    <div class="h">⚠️ Gotcha · why this trips everyone</div>
+    People expect <code>loot</code> to become 100 everywhere. It doesn't — the function made its
+    <i>own</i> private <code>loot</code>. This isolation is a feature: teammates can't accidentally
+    sabotage each other's variables. That's exactly why functions make big programs safe to reason about.
+  </div>
+
+  <h3>③ <code>*args</code> and <code>**kwargs</code> — a crew of unknown size</h3>
+  <p>Sometimes you don't know how many teammates will show up, or what roles they'll bring.
+  <code>*args</code> catches "any number of extras" as a tuple; <code>**kwargs</code> catches
+  "any number of named roles" as a dictionary.</p>
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">roll_call.py</span></div>
+<pre><code><span class="k">def</span> <span class="f">crew_report</span>(*<span class="n">members</span>, **<span class="n">roles</span>):
+    <span class="k">return</span> <span class="f">len</span>(members), roles
+
+<span class="f">print</span>(<span class="f">crew_report</span>(<span class="s">"Ana"</span>, <span class="s">"Ben"</span>, <span class="s">"Cy"</span>, lead=<span class="s">"Ana"</span>, hacker=<span class="s">"Cy"</span>))</code></pre>
+    <div class="out"><span class="lbl">Output</span>(3, {'lead': 'Ana', 'hacker': 'Cy'})</div>
+  </div>
+
+  <h3>④ Recursion — a function that calls itself</h3>
+  <p>The detonator counts down by calling itself with one less second — until it hits the
+  <b>base case</b> and stops. Every recursion needs an exit, or it loops forever.</p>
+  <div class="code">
+    <div class="top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fname">countdown.py</span></div>
+<pre><code><span class="k">def</span> <span class="f">countdown</span>(<span class="n">n</span>):
+    <span class="k">if</span> n == <span class="n">0</span>:
+        <span class="k">return</span> <span class="s">"BOOM"</span>      <span class="c"># base case — the exit door</span>
+    <span class="k">return</span> <span class="f">countdown</span>(n - <span class="n">1</span>)  <span class="c"># calls itself, one step closer</span>
+
+<span class="f">print</span>(<span class="f">countdown</span>(<span class="n">3</span>))</code></pre>
+    <div class="out"><span class="lbl">Output</span>BOOM</div>
+  </div>
+
+  <h3>⑤ The real reason pros insist on functions: debugging & testing</h3>
+  <p>When each job is its own named specialist, a failure has an <b>address</b>. If the loot never
+  appears, you don't search 500 lines — you interrogate <code>unlock_vault()</code> alone, test it
+  in isolation, fix it once, and every one of its 100 call sites is fixed at the same time.</p>
+  <div class="call why">
+    <div class="h">💡 Five reasons functions exist (memorize these)</div>
+    <b>Reuse</b> — write once, call forever. &nbsp;·&nbsp;
+    <b>Readability</b> — a good name explains what a block does. &nbsp;·&nbsp;
+    <b>Isolation</b> — local scope stops teammates sabotaging each other. &nbsp;·&nbsp;
+    <b>Debuggability</b> — bugs have a single address, fixed in one place. &nbsp;·&nbsp;
+    <b>Abstraction</b> — you call <code>unlock_vault()</code> without re-reading how it works.
+  </div>
+</section>
+
+<!-- ===================== THE COST OF NO FUNCTIONS ===================== -->
+<section id="cost">
+  <div class="kicker"><span class="n">!</span> The Alternative</div>
+  <h2>Imagine 500 vaults with no crew</h2>
+  <div class="map" style="gap:14px">
+    <div class="step" style="border-color:rgba(255,93,93,.35)">
+      <b style="color:var(--red)">Without functions</b>
+      <div class="code" style="margin:10px 0 0">
+<pre><code><span class="c">Check Door 1</span>
+<span class="c">Open  Door 1</span>
+<span class="c">Check Door 2</span>
+<span class="c">Open  Door 2</span>
+<span class="c">... × 500 ...</span></code></pre>
+      </div>
+      <small>Thousands of repeated lines. One typo, fixed 500 times.</small>
+    </div>
+    <div class="step" style="border-color:rgba(74,222,128,.35)">
+      <b style="color:var(--green)">With functions</b>
+      <div class="code" style="margin:10px 0 0">
+<pre><code><span class="f">unlock_vault</span>(<span class="s">"A12"</span>)
+<span class="f">unlock_vault</span>(<span class="s">"B45"</span>)
+<span class="f">unlock_vault</span>(<span class="s">"C78"</span>)</code></pre>
+      </div>
+      <small>Cleaner · shorter · reusable · easy to read · easy to debug.</small>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== QUIZ ===================== -->
+<section id="quiz">
+  <div class="kicker"><span class="n">?</span> The Final Test</div>
+  <h2>Prove you're ready to lead the crew</h2>
+  <p class="muted">Pick the answer. It'll tell you instantly whether the intel is solid.</p>
+
+  <div class="quiz" data-answer="1">
+    <div class="qn">1. You need to transform <i>every</i> code in a list by the same rule. Which crew member?</div>
+    <button class="opt">A user-defined function called once</button>
+    <button class="opt">A higher-order function like <code>map()</code></button>
+    <button class="opt">A built-in like <code>len()</code></button>
+    <div class="fb"></div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <div class="qn">2. What's the difference between a <b>parameter</b> and an <b>argument</b>?</div>
+    <button class="opt">They're the same thing</button>
+    <button class="opt">Parameter is the input to <code>map()</code>; argument is the output</button>
+    <button class="opt">Parameter is the slot in the definition; argument is the real value you pass in</button>
+    <div class="fb"></div>
+  </div>
+
+  <div class="quiz" data-answer="0">
+    <div class="qn">3. A function only <code>print()</code>s its result. You try to use that result later. What happens?</div>
+    <button class="opt">You get <code>None</code> — it showed the value but returned nothing</button>
+    <button class="opt">It works fine; print and return are identical</button>
+    <button class="opt">Python raises an error immediately</button>
+    <div class="fb"></div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <div class="qn">4. Why is a variable created inside a function usually invisible outside it?</div>
+    <button class="opt">Because Python is slow</button>
+    <button class="opt">Because you forgot to <code>print</code> it</button>
+    <button class="opt">Because of <b>local scope</b> — it lives only during that function's job</button>
+    <div class="fb"></div>
+  </div>
+</section>
+
+<!-- ===================== CHEAT SHEET ===================== -->
+<section id="cheat">
+  <div class="kicker"><span class="n">★</span> Debrief</div>
+  <h2>The crew, one last time</h2>
+  <div class="cheat">
+    <table class="tbl" style="border:none">
+      <tr><th>Crew member</th><th>Function type</th><th>Its one job</th><th>Reach for it when…</th></tr>
+      <tr><td>🧑‍💼 Museum Guide</td><td>Built-in</td><td>ready-made helper</td><td>Python already provides it (<code>len</code>, <code>max</code>, <code>print</code>)</td></tr>
+      <tr><td>🔓 Lock Expert</td><td>User-defined (<code>def</code>)</td><td>your custom, reusable logic</td><td>you have a job Python can't already do</td></tr>
+      <tr><td>👻 Ghost Hacker</td><td>Lambda</td><td>tiny one-line job</td><td>a quick throwaway, often passed to another function</td></tr>
+      <tr><td>🎩 Mastermind</td><td>Higher-order</td><td>directs other functions</td><td><code>map</code> / <code>filter</code> / <code>reduce</code> over a whole collection</td></tr>
+    </table>
+  </div>
+
+  <div class="call remember" style="margin-top:22px">
+    <div class="h">📌 Points to carry forever</div>
+    <b>What</b> a function is: a named, reusable teammate that takes inputs and returns a result.
+    <b>Why</b> functions exist: reuse, readability, isolation, debuggability, abstraction.
+    <b>Inputs</b>: parameters are the slots, arguments are the real values.
+    <b>Output</b>: <code>return</code> hands a value back; <code>print</code> only displays.
+    <b>Scope</b>: what's made inside a function stays inside it.
+    <b>Types</b>: built-in, user-defined, lambda, higher-order — same idea, different roles.
+  </div>
+</section>
+
+<!-- ===================== END ===================== -->
+<section id="end" style="border-top:none">
+  <div class="end">
+    <div style="font-size:2.4rem">💎</div>
+    <div class="big">The Crystal of Olympos is yours.</div>
+    <p class="muted" style="max-width:520px;margin:8px auto 0">Not because you did everything —
+    because you built a crew where each member did one thing perfectly, and you knew exactly who
+    to call.</p>
+    <blockquote>Think like a Mastermind, not a lone hacker.<br>
+    In Python you don't solve every problem yourself — you build a skilled team of functions,
+    and let each one do what it does best.</blockquote>
+  </div>
+</section>
+
+</div><!-- /wrap -->
+
+<script>
+  // progress bar
+  const bar = document.getElementById('bar');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const p = (h.scrollTop) / (h.scrollHeight - h.clientHeight);
+    bar.style.width = (p * 100) + '%';
+  }, {passive:true});
+
+  // quiz logic
+  document.querySelectorAll('.quiz').forEach(q => {
+    const correct = +q.dataset.answer;
+    const opts = [...q.querySelectorAll('.opt')];
+    const fb = q.querySelector('.fb');
+    opts.forEach((o, i) => o.addEventListener('click', () => {
+      opts.forEach(x => { x.classList.remove('correct','wrong'); x.disabled = false; });
+      if (i === correct) {
+        o.classList.add('correct');
+        fb.style.color = 'var(--green)';
+        fb.textContent = '✔ Correct — intel confirmed.';
+      } else {
+        o.classList.add('wrong');
+        opts[correct].classList.add('correct');
+        fb.style.color = 'var(--red)';
+        fb.textContent = '✘ Not quite — the green one is the safe move.';
+      }
+    }));
+  });
+
+  // gentle reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting){ e.target.style.opacity=1; e.target.style.transform='none'; }
+  }), {threshold:.08});
+  document.querySelectorAll('section').forEach(s => {
+    s.style.opacity=0; s.style.transform='translateY(18px)';
+    s.style.transition='opacity .6s ease, transform .6s ease';
+    io.observe(s);
+  });
+</script>
+</body>
+</html>
